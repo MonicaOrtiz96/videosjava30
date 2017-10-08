@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Game Phaser</title>
+    <style>* { padding: 0; margin: 0; }</style>
+    <script src="js/phaser.min.js"></script> 
+</head>
+<body >
+ 
+<script>
+    
+       var game = new Phaser.Game(480, 320, Phaser.AUTO, null, {
+      preload: preload, create: create, update: update
+    });
+
+    var ball; // variable js para representar la  pelota
+    var paddle; // variable para representar el rectangulo principal
+    var bricks; // variable para representar  los cuadros de arriba
+    var newBrick; // sera un nuebo objeto agregado  al grupo  en cada iteracion del blucle
+    var brickInfo; // almacenara todos los datos que necesitemos
+    var scoreText; // el mensaje que saldra de los puntos
+    var score = 0; // se inicializara los puntos en 0
+    var lives = 3; // tienes 3 bidas
+    var livesText; // el texto donde te menciona cuantas bidas tienes
+    var lifeLostText; // cuando se te pierdan todas las vidas
+    var playing = false; // ser un jugador
+    var startButton; // mustra el efecto de cuando apretas la tecla
+
+
+    function preload() {
+        handleRemoteImagesOnJSFiddle();
+    game.scale.scaleMode = Phaser.ScaleManager.SHOW_ALL;
+    game.scale.pageAlignHorizontally = true;
+    game.scale.pageAlignVertically = true;
+    game.stage.backgroundColor = '#0c0c0c'; //  color del fondo del juego
+    game.load.image('paddle', 'img/paddle.png'); // imagen del rectangulo principal
+    game.load.image('brick', 'img/brick.png'); // imagen de los cuadros de arriba
+    game.load.spritesheet('ball', 'img/wobble.png', 20, 20); // imagen del efecto de la pelota
+    game.load.spritesheet('button', 'img/button.png', 120, 40); // imagen del botton que mide 120 pixeles ancho y 40 alto
+    
+    }
+   
+    function create() { // se eliminara las cordenadas de update por que ahora estamos usando el motor de la fisica
+        game.physics.startSystem(Phaser.Physics.ARCADE); // inicializa el motor de la fisica de nuetsro juego 
+        game.physics.arcade.checkCollision.down = false; // desactibaremos la colision de la pelota con el borde inferior de la pantalla
+        ball = game.add.sprite(game.world.width*0.5, game.world.height-25, 'ball');// para mostrar la pelota  //los dos primeros son las cordenadas del lienzo y el otro el nombre de imagen pelota
+        ball.animations.add('wobble', [0,1,0,2,0,1,0,2,0], 24);
+        ball.anchor.set(0.5);
+        game.physics.enable(ball, Phaser.Physics.ARCADE); // habilitar la pelota en el sistema de la fisica
+        ball.body.collideWorldBounds  = true; // le decimos al marco que queremos  poner los limites del canbas como paredes, para que la pelota no se sobrepase
+        ball.body.bounce.set(1); // para que rebote la pelota una sola bez
+        ball.checkWorldBounds = true; // hara que la bola compruebe los limites del lienzo
+        ball.events.onOutOfBounds.add(ballLeaveScreen, this);
+
+
+        paddle = game.add.sprite(game.world.width*0.5, game.world.height-5, 'paddle'); // para mostrar el rectangulo principal, las cordenadas son para posicionar el rectangulo principal donde queramos y la imagen del rectangulo
+        paddle.anchor.set(0.5,1);
+        game.physics.enable(paddle, Phaser.Physics.ARCADE);
+        paddle.body.immovable = true;
+
+        initBricks(); // llama la fancion brickks para que se creen y se puedan mostrar los cuadros
+
+        
+        textStyle = { font: '18px Arial', fill: '#b000dd' };
+        scoreText = game.add.text(5, 5, 'Points: 0', textStyle);
+        livesText = game.add.text(game.world.width-5, 5, 'Lives: '+lives, textStyle);
+        livesText.anchor.set(1,0);
+        lifeLostText = game.add.text(game.world.width*0.5, game.world.height*0.5, 'Life lost, tap to continue', textStyle);
+        lifeLostText.anchor.set(0.5);
+        lifeLostText.visible = false;
+
+        startButton = game.add.button(game.world.width*0.5, game.world.height*0.5, 'button', startGame, this, 1, 0, 2);
+    startButton.anchor.set(0.5); // hace el efecto cuandpo se aprieta las teclas 
+    }
+    function update() { 
+        game.physics.arcade.collide(ball, paddle, ballHitPaddle);
+        game.physics.arcade.collide(ball, bricks, ballHitBrick);
+         // la paleta  se quedara inobible  despues de que todo este cargado y preparado antes del inicio del juego
+         if(playing) {
+        paddle.x = game.input.x || game.world.width*0.5;
+    }
+    
+    }
+    function initBricks() { // contiene toda la informacion que necesitamos del brick
+    brickInfo = {
+        width: 50, // ancho de un solo ladrillo
+        height: 20, // altura de un solo ladrillo 
+        count: {
+            row: 7, // numero de filas de ladrillos que saldra en la pantalla
+            col: 3 //numero de columnas
+        },
+        offset: {
+            top: 50, //  desplazamiento superior e izquierdo (ibicacion de donde empezamos a dibujar los ladrillos)
+            left: 60 // borde bajo
+        },
+        padding: 10 // relleno entre cada fila y columna de ladrillos 
+    }
+    bricks = game.add.group(); // podemos recorrer las filas y las columnas para crear un nuevo ladrillo en cada iteracion
+    for(c=0; c<brickInfo.count.col; c++) { // crear un nuevo ladrillo y colocarlo en el grupo
+        for(r=0; r<brickInfo.count.row; r++) {
+            // de esta manera crearemos el numero exacto de ladrillos que necesitamos y tenerlos todos
+            // contenidos en un grupo
+            // como estamos pintando los lafrillos en la misma posicion (0,0) usaremos brickX y brickY para ponerlosen su propia posicion x y y
+            var brickX = (r*(brickInfo.width+brickInfo.padding))+brickInfo.offset.left;
+            var brickY = (c*(brickInfo.height+brickInfo.padding))+brickInfo.offset.top;
+            //Aquí estamos haciendo bucle a través de las filas y columnas 
+            //para crear los nuevos ladrillos y colocarlos en la pantalla. 
+            //El ladrillo recién creado está habilitado para el motor de física Arcade, 
+            //su cuerpo está configurado para ser inamovible (por lo que no se moverá cuando se golpea por la pelota),
+            // y también estamos fijando el ancla para estar en el medio y añadir el ladrillo al grupo.
+            newBrick = game.add.sprite(brickX, brickY, 'brick');
+            game.physics.enable(newBrick, Phaser.Physics.ARCADE);
+            newBrick.body.immovable = true;
+            newBrick.anchor.set(0.5);
+            bricks.add(newBrick);
+        }
+    }
+}
+function ballHitBrick(ball, brick) {
+    var killTween = game.add.tween(brick.scale);
+    killTween.to({x:0,y:0}, 200, Phaser.Easing.Linear.None);
+    killTween.onComplete.addOnce(function(){
+        brick.kill();
+    }, this);
+    killTween.start();
+    score += 10; // se oira sumando 10 puntos por cada cuadrito destruido
+    scoreText.setText('Points: '+score); // aparecere en el texto de la suma de los puntos
+    if(score === brickInfo.count.row*brickInfo.count.col*10) { // el efecto de cuando termin de eliminar todos los cuadritos
+        alert('You won the game, congratulations!'); // sale un mensaje de que ya ganaste el juego
+        location.reload();
+    }
+}
+
+function ballLeaveScreen() {
+    lives--;
+    if(lives) {
+        livesText.setText('Lives: '+lives);
+        lifeLostText.visible = true;
+        ball.reset(game.world.width*0.5, game.world.height-25);
+        paddle.reset(game.world.width*0.5, game.world.height-5);
+        game.input.onDown.addOnce(function(){
+            lifeLostText.visible = false;
+            ball.body.velocity.set(150, -150);
+        }, this);
+    }
+    else {
+        alert('You lost, game over!');
+        location.reload();
+    }
+}
+    function ballHitPaddle(ball, paddle) { // animacion de la pelota al rebotar
+    ball.animations.play('wobble');
+    ball.body.velocity.x = -1*5*(paddle.x-ball.x);
+    }
+
+    function startGame() {
+    startButton.destroy();
+    ball.body.velocity.set(150, -150);
+    playing = true;
+}
+
+    function handleRemoteImagesOnJSFiddle() {
+	game.load.baseURL = 'https://end3r.github.io/Gamedev-Phaser-Content-Kit/demos/';
+	game.load.crossOrigin = 'anonymous';
+}
+</script>
+</body>
+</html>
