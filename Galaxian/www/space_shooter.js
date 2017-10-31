@@ -736,12 +736,12 @@ function Game() {
 			this.explosion = new SoundPool(20);
 			this.explosion.init("explosion");
 
-			this.backgroundAudio = new Audio("sounds/kick_shock.wav");
+			this.backgroundAudio = new Audio("sounds/bomberman.mp3");
 			this.backgroundAudio.loop = true;
 			this.backgroundAudio.volume = .25;
 			this.backgroundAudio.load();
 
-			this.gameOverAudio = new Audio("sounds/game_over.wav");
+			this.gameOverAudio = new Audio("sounds/bombermangame.mp3");
 			this.gameOverAudio.loop = true;
 			this.gameOverAudio.volume = .25;
 			this.gameOverAudio.load();
