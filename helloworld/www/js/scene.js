@@ -9,12 +9,17 @@
         let renderer = new THREE.WebGLRenderer();
         renderer.setSize(window.innerWidth, window.innerHeight);
         document.body.appendChild(renderer.domElement);
-    
+        //renderer.shadowMap.enabled = true; // ampliar el serbicio de las sombras para poder hacerlas 
+       // renderer.shadowMap.soft = true; // hacer la sombra  mas suabe con respecto a la luz que estoy proyectando
+       // renderer.shadowMap.type = THREE.PCFShadowMap; // la tipo de sombra que usaremos
+
         camera.position.z = 110;
         camera.position.y = 10;
         camera.position.x = -10;
-        //camera.position.z=60;
+        //camera.position.z=60; // para la tierra con la sombra
         //camera.position.y=15;
+
+
         
 
         let mesh;
@@ -28,17 +33,17 @@
         //let meshneptuno;
         //let meshpluton;
 
-                /*let planeGeometry= new THREE.PlaneGeometry(200,900); // creacion de cl plano
+        // lo de la sombra
+        /*let planeGeometry= new THREE.PlaneGeometry(200,900); // creacion de cl plano
         planeGeometry.applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI/2));// matrix de 4 ejes
         //  se rota y se refresque constantemente 
         let groundMaterial = new THREE.MeshPhongMaterial({ // genera el material en el mesh
             color: 0xffffff
         });
         let plane=new THREE.Mesh(planeGeometry, groundMaterial); // crear la geometria
-        let loader= new THREE.TextureLoader();*/
+        plane.receiveShadow= true;*/
+        let loader= new THREE.TextureLoader();
 
-        
-        let loader = new THREE.TextureLoader();
     
        loader.load('public/sol.jpg', function(texture){
             let geometrysol = new THREE.SphereGeometry(60,100,100)
@@ -60,8 +65,9 @@
             })
     
             mesh = new THREE.Mesh(geometry, material);
-    
-            mesh.position.y = 0;
+            //mesh.castShadow = true; // esa primitiba que estoy generando es la que proyectara la sombra
+            //mesh.position.y = 25; // para lo de la sombbra
+            mesh.position.y = 0;// para lo del sistema solar
             scene.add(mesh);
         })
         loader.load('public/marte.jpg', function(texture){
@@ -163,18 +169,25 @@
             color: 0xffffff
         });
 
-        let pointLight = new THREE.PointLight(0x404040);
+        let pointLight = new THREE.PointLight(0x606060);
     
-        pointLight.position.y = 80;
+        pointLight.position.y = 60;
         pointLight.position.z = 20;
+
+        //pointLight.castShadow= true; // luz para la tierra con la sombra 
         
-        scene.background = new THREE.Color(0x070707);
+        //scene.background = new THREE.Color(0xFFFFFF); // fondo blanco la tierra con la sombra
+        scene.background = new THREE.Color(0x0A0A0A); // fondo negro sistema solar
         scene.add(new THREE.AmbientLight(0x404040));
+        //scene.add(plane); // plano para la tierra con la sombra
         scene.add(pointLight);
+
+        let controls= new THREE.OrbitControls(camera, renderer.domElement); // agregas los controles
     
     
         function loop(){
             requestAnimationFrame(loop);
+            //mesh.rotation.x += 0.01; // la tierra con la sombra
             //quitar la rotacion cuando ya se copie el codigo
             mesh.rotation.y += 0.01;
             mesh.rotation.z += 0.01;

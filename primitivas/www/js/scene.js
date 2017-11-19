@@ -56,6 +56,7 @@
         pointLight.position.y = 80;
         pointLight.position.z = 20;
 
+      
         scene.add(mesh); // agrega el mesh a la scena
         scene.add( cone ); // agtrega el cono a la scena 
         scene.add( ring ); // agrega el ring a la scena
